@@ -28,6 +28,54 @@ var api = {
 				parent : id
 			}
 		});
+	},
+	//Our api//
+	createUser : function(email, nickName) {
+		return m.request({
+			url : T.apiUrl + "/user/create", 
+			method : "POST",
+			data : {
+				email : email,
+				nickName : nickName
+			}
+		});
+	},
+	submitTask : function(done, authorID, content, novelId) {
+		return m.request({
+			url : T.apiUrl + "/task/submit", 
+			method : "POST",
+			data : {
+				state : done,
+				authorID : authorID,
+				content : content,
+				novelId : novelId
+			}
+		});
+	},
+	takeTask : function() {
+		return m.request({
+			url : T.apiUrl + "/task/take", 
+			method : "POST",
+			data : {
+				authorID : authorID,
+				novelId : novelId
+			}
+		});		
+	},
+	getNovel : function(novelId) {
+		return m.request({
+			url : T.apiUrl + "/novel/get", 
+			method : "GET",
+			data : {
+				novelId : novelId
+			}
+		});
+	},
+	listNovel : function() {
+		return m.request({
+			url : T.apiUrl + "/novels/", 
+			method : "GET"
+		});
 	}
 };
 
@@ -44,6 +92,7 @@ var header = function() {
 
 //HOME COMPONENT
 // Views
+// Post textarea
 var newThread = function(ctrl) {
 	return m("form", {
 			onsubmit: ctrl.newThread
