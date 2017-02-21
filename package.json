@@ -1,0 +1,20 @@
+{
+  "name": "TheScholarSwordsman",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack src/index.js bin/app.js -d --watch && node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.1",
+    "mithril": "^1.0.1"
+  },
+  "devDependencies": {
+    "webpack": "^2.2.1"
+  }
+}
