@@ -1,4 +1,5 @@
 //API calls
+var apiUrl = "http://hschueh.ddns.net:3001/api"
 var api = {
 	home : function() {
 		return m.request({
@@ -30,9 +31,10 @@ var api = {
 		});
 	},
 	//Our api//
+	/* User */
 	createUser : function(email, nickName) {
 		return m.request({
-			url : T.apiUrl + "/user/create", 
+			url : apiUrl + "/users/create", 
 			method : "POST",
 			data : {
 				email : email,
@@ -40,40 +42,55 @@ var api = {
 			}
 		});
 	},
+	getUser : function(authorID) {
+		return m.request({
+			url : apiUrl + "/users/" + ((undefined == authorID)?"":authorID),
+			method : "GET"
+		});
+	},
+	/* Novels */
+	listNovel : function() {
+		return m.request({
+			url : "/novels/", 
+			method : "GET"
+		});
+	},
 	submitTask : function(done, authorID, content, novelId) {
 		return m.request({
-			url : T.apiUrl + "/task/submit", 
+			url : apiUrl + "/novels/submit/" + novelId,
 			method : "POST",
 			data : {
 				state : done,
 				authorID : authorID,
-				content : content,
-				novelId : novelId
+				content : content
 			}
 		});
 	},
-	takeTask : function() {
+	takeTask : function(authorID, novelId) {
 		return m.request({
-			url : T.apiUrl + "/task/take", 
+			url : "/novels/take/" + novelId, 
 			method : "POST",
 			data : {
-				authorID : authorID,
-				novelId : novelId
+				authorID : authorID
 			}
 		});		
 	},
 	getNovel : function(novelId) {
 		return m.request({
-			url : T.apiUrl + "/novel/get", 
-			method : "GET",
-			data : {
-				novelId : novelId
-			}
+			url : "/novels/get/" + novelId, 
+			method : "GET"
 		});
 	},
-	listNovel : function() {
+	deleteNovel : function(novelId) {
 		return m.request({
-			url : T.apiUrl + "/novels/", 
+			url : "/novels/delete/" + novelId,
+			method : "POST"
+		});
+	},
+	/* Chapters */
+	getChapter : function(chapterId) {
+		return m.request({
+			url : "/chapters/get/" + ((undefined == chapterId)?"":chapterId),
 			method : "GET"
 		});
 	}
@@ -88,6 +105,14 @@ var header = function() {
 			}, "TheScholarSwordsman")
 		])
 	];
+};
+
+var testButton = function(ctrl) {
+	return m("button", {
+		onclick: ctrl.getUser
+		}, 
+    	"Click me"
+	);
 };
 
 //HOME COMPONENT
@@ -141,6 +166,13 @@ var home = {
 			
 			event.preventDefault();
 		};
+		this.getUser = function(event) {
+			api.getUser()
+				.then(function(response) {
+    				alert("Hello! I am an alert box! Response is " + response);
+			});
+			event.preventDefault();
+		};
 		
 		this.loading = true;
 		this.newText = "";
@@ -169,7 +201,8 @@ var home = {
 		else {
 			main = [
 					ctrl.threads().map(threadListItemView),
-					newThread(ctrl)
+					newThread(ctrl),
+					testButton(ctrl)
 			];
 		}
 
