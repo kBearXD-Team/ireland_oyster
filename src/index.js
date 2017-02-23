@@ -32,66 +32,121 @@ var api = {
 	},
 	//Our api//
 	/* User */
-	createUser : function(email, nickName) {
+	createUser : function(username, password, facebookId) {
 		return m.request({
-			url : apiUrl + "/users/create", 
+			url : apiUrl + "/users/", 
 			method : "POST",
 			data : {
-				email : email,
-				nickName : nickName
+			    username: username,
+			    password: password,
+			    facebook_id: facebookId
 			}
 		});
 	},
-	getUser : function(authorID) {
+	getUser : function(userId) {
 		return m.request({
-			url : apiUrl + "/users/" + ((undefined == authorID)?"":authorID),
+			url : apiUrl + "/users/" + ((undefined == userId)?"":userId),
 			method : "GET"
+		});
+	},
+	updateUser : function(userId, username, facebookId, description) {
+		return m.request({
+			url : apiUrl + "/users/" + userId,
+			method : "PUT",
+			data : {
+				username : username,
+				facebook_id : facebookId,
+				description : description
+			}
+		});
+	},
+	deleteUser : function(userId) {
+		return m.request({
+			url : apiUrl + "/users/" + userId,
+			method : "DELETE"
 		});
 	},
 	/* Novels */
+	createNovel : function(title) {
+		return m.request({
+			url : apiUrl + "/novels/", 
+			method : "POST",
+			data : {
+				title : title
+			}
+		});
+	},
 	listNovel : function() {
 		return m.request({
-			url : "/novels/", 
+			url : apiUrl + "/novels/", 
 			method : "GET"
 		});
 	},
-	submitTask : function(done, authorID, content, novelId) {
+	submitTask : function(done, authorId, chapterId, novelId) {
 		return m.request({
 			url : apiUrl + "/novels/submit/" + novelId,
 			method : "POST",
 			data : {
 				state : done,
-				authorID : authorID,
-				content : content
+				author : authorId,
+				Chapters : chapterId
 			}
 		});
 	},
-	takeTask : function(authorID, novelId) {
+	takeTask : function(authorId, novelId) {
 		return m.request({
-			url : "/novels/take/" + novelId, 
-			method : "POST",
+			url : apiUrl + "/novels/take/" + novelId, 
+			method : "PUT",
 			data : {
-				authorID : authorID
+				user : authorId
 			}
 		});		
 	},
 	getNovel : function(novelId) {
 		return m.request({
-			url : "/novels/get/" + novelId, 
+			url : apiUrl + "/novels/get/" + novelId, 
 			method : "GET"
 		});
 	},
 	deleteNovel : function(novelId) {
 		return m.request({
-			url : "/novels/delete/" + novelId,
-			method : "POST"
+			url : apiUrl + "/novels/delete/" + novelId,
+			method : "DELETE"
 		});
 	},
 	/* Chapters */
 	getChapter : function(chapterId) {
 		return m.request({
-			url : "/chapters/get/" + ((undefined == chapterId)?"":chapterId),
+			url : apiUrl + "/chapters/" + ((undefined == chapterId)?"":chapterId),
 			method : "GET"
+		});
+	},
+	createChapter : function(authorId, novelId, content) {
+		return m.request({
+			url : apiUrl + "/chapters/",
+			method : "POST",
+			data : {
+				author : authorId,
+				novel : novelId,
+				content : content
+			}
+		});
+	},
+	updateChapter : function(authorId, content, rate) {
+		return m.request({
+			url : apiUrl + "/chapters/",
+			method : "PUT",
+			data : {
+				author : authorId,
+				content : content,
+				rate : rate
+			}
+		});
+	},
+	deleteChapter : function(chapterId) {
+		return m.request({
+			url : apiUrl + "/chapters/" + chapterId,
+			method : "DELETE"
 		});
 	}
 };
