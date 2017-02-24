@@ -89,7 +89,7 @@ var api = {
 			data : {
 				state : done,
 				author : authorId,
-				Chapters : chapterId
+				chapter : chapterId
 			}
 		});
 	},
