@@ -191,6 +191,24 @@ var newThread = function(ctrl) {
 	);
 };
 
+var createNovelForm = function(ctrl) {
+	return m("form", {
+			onsubmit: ctrl.createNovel
+		}, [
+			m("textarea", {
+				value : ctrl.newText,
+				oninput : function(e) {
+					ctrl.newText = e.currentTarget.value;
+				}
+			}),
+			m("input", {
+				type:"submit",
+				value: "CreateNovel!"
+			})
+		]
+	);
+};
+
 var threadListItemView = function(thread) {
 	return [
 		m("p", [
@@ -205,38 +223,45 @@ var threadListItemView = function(thread) {
 	];
 };
 
+var novelListItemView = function(novel) {
+	return [
+		m("p", [
+			m("a", {
+				href : "/novel/" + novel._id,
+				config : m.route
+			},
+			m.trust(T.trimTitle(novel.title)))
+		]),
+		m("p.chapter_count", novel.chapters.length + " chapter(s)"),
+		m("hr") 
+	];
+};
+
 //Actual component
 var home = {
 	controller : function() {
 		var self = this;
 
-		this.newThread = function(event) {
-			api.newThread(self.newText)
+		this.createNovel = function(event) {
+			api.createNovel(self.newText)
 				.then(function(response) {
 					self.newText = "";
-					var newThreads = self.threads();
-					newThreads.push(response.data);
-					self.threads(newThreads);
+					var newNovels = self.novels();
+					newNovels.unshift(response);
+					self.novels(newNovels);
 			});
 			
-			event.preventDefault();
-		};
-		this.getUser = function(event) {
-			api.getUser()
-				.then(function(response) {
-    				alert("Hello! I am an alert box! Response is " + response);
-			});
 			event.preventDefault();
 		};
 		
 		this.loading = true;
 		this.newText = "";
-		this.threads = api.home();
+		this.novels = api.listNovel();
 
-		this.threads.then(function(response) {
+		this.novels.then(function(response) {
 			document.title = "ThreaditJS: Mithril | Home";
 			self.loading = false;
-			self.threads(response.data);
+			self.novels(response);
 		}, function(response) {
 			self.loading = false;
 			self.error = true;
@@ -255,9 +280,8 @@ var home = {
 		}
 		else {
 			main = [
-					ctrl.threads().map(threadListItemView),
-					newThread(ctrl),
-					testButton(ctrl)
+					ctrl.novels().map(novelListItemView),
+					createNovelForm(ctrl)
 			];
 		}
 
@@ -294,6 +318,21 @@ var replyView = function(ctrl) {
 		"Reply!");
 	}
 };
+
+var takeTaskBtn = function(ctrl) {
+	if(ctrl.novel().status == "open") {
+		return m("button", {
+			onclick: ctrl.takeTask
+			}, 
+	    	"Take task!"
+		);
+	}
+	else {
+		return m("a",
+			"Not opened task!"
+			);
+	}
+}
 
 var threadNode = {
 	controller : function(options) {
@@ -367,9 +406,50 @@ var thread = {
 	}
 };
 
+var novel = {
+	controller : function(){
+		var self = this;  
+
+		this.takeTask = function(event) {
+			api.takeTask("testUser123", self.novel()._id)
+				.then(function(response) {
+    				self.novel(response);
+			});
+			
+			event.preventDefault();
+		};
+
+		this.novel = api.getNovel(m.route.param("id"));
+		this.loading = true;
+
+		this.novel.then(function(response) {
+			document.title = "TheScholarSwordsman | " + response.title;
+			self.loading = false;
+			return response;
+		}, 
+		function(response) {
+			self.loading = false;
+			if(response.status==404) {
+				self.notFound = true;
+			}
+			else {
+				self.error = true;
+			}
+		});
+	},
+	view : function(ctrl) {
+		return [
+			header(),
+			m("h2", ctrl.novel().title),
+			takeTaskBtn(ctrl)
+			];
+	}
+};
+
 //Router
 m.route.mode = "pathname";
 m.route(document.body, "", {
 	"/thread/:id" : thread,
+	"/novel/:id" : novel,
 	"" : home
 });
