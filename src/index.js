@@ -32,13 +32,12 @@ var api = {
 	},
 	//Our api//
 	/* User */
-	createUser : function(username, password, facebookId) {
+	createUser : function(username, facebookId) {
 		return m.request({
 			url : apiUrl + "/users/", 
 			method : "POST",
 			data : {
 			    username: username,
-			    password: password,
 			    facebook_id: facebookId
 			}
 		});
@@ -46,6 +45,12 @@ var api = {
 	getUser : function(userId) {
 		return m.request({
 			url : apiUrl + "/users/" + ((undefined == userId)?"":userId),
+			method : "GET"
+		});
+	},
+	getUserByFbId : function(userFbId) {
+		return m.request({
+			url : apiUrl + "/users/fb/" + userFbId,
 			method : "GET"
 		});
 	},
@@ -146,26 +151,6 @@ var api = {
 			url : apiUrl + "/chapters/" + chapterId,
 			method : "DELETE"
 		});
-	},
-	login : function(){
-		FB.login(function(response) {
-		    if (response.authResponse) {
-		     console.log('Welcome!  Fetching your information.... ');
-		     fbId = response.authResponse.userID;
-		     isLogin = true;
-		     FB.api('/me', function(response) {
-		       fbName = response.name;
-		       console.log('Good to see you, ' + response.name + '.');
-		       m.redraw();
-		     });
-		     FB.api('/'+fbId+'/picture?width=800', function(response) {
-		       picUrl = response.data.url;
-		       m.redraw();
-		     });
-		    } else {
-		     console.log('User cancelled login or did not fully authorize.');
-		    }
-		});
 	}
 };
 
@@ -177,27 +162,33 @@ var header = function() {
 				href: "/", config:m.route
 			}, "TheScholarSwordsman")
 		]),
-		loginButton()
+		loginManager
 	];
 };
 
-var isLogin = false;
-var picUrl = "";
-var fbId = "";
-var fbName = "";
-var loginButton = function() {
-	if(isLogin && picUrl != ""){
-		return m("img[alt='User Pic'][src='" + picUrl + "']",
-			{style: {"width": "128px", "height": "128px"}
-		}
-		);
+var loginButton = function(ctrl) {
+	if(ctrl.isLogin && ctrl.picUrl != ""){
+		return m("div",[
+		m("img[alt='User Pic'][src='" + ctrl.picUrl + "']",
+			{style: {"width": "128px", "height": "128px"}}
+		),
+		m("button", {
+			onclick: ctrl.getUserByFbId
+			}, 
+	    	"Check fbid status"
+		),
+		m("button", {
+			onclick: ctrl.createUser
+			}, 
+	    	"Create User"
+		)]);
 	}
 	else {
 		return m("button", {
-			onclick: api.login
+			onclick: ctrl.login
 			}, 
 	    	"Login by facebook"
-		);	
+		);
 	}
 };
 
@@ -267,6 +258,55 @@ var novelListItemView = function(novel) {
 		m("hr") 
 	];
 };
+
+var loginManager = {
+	controller : function() {
+		var self  = this;
+		this.isLogin = false;
+		this.picUrl = "";
+		this.fbId = "";
+		this.fbName = "";
+
+		this.createUser = function(event) {
+			api.createUser(self.fbName, self.fbId)
+				.then(function(response) {
+					console.log('User created ' + response);
+				});
+		};
+
+		this.getUserByFbId = function(event) {
+			api.getUserByFbId(self.fbId)
+				.then(function(response) {
+					console.log('User queried from fbid is ' + response);
+				});
+		};
+
+		this.login = function(event) {
+			FB.login(function(response) {
+				if (response.authResponse) {
+					console.log('Welcome!  Fetching your information.... ');
+					self.fbId = response.authResponse.userID;
+					self.isLogin = true;
+					FB.api('/me', function(response) {
+						self.fbName = response.name;
+						console.log('Good to see you, ' + response.name + '.');
+						m.redraw();
+					});
+					FB.api('/'+self.fbId+'/picture?width=800', function(response) {
+						self.picUrl = response.data.url;
+						m.redraw();
+					});
+				} else {
+					console.log('User cancelled login or did not fully authorize.');
+				}
+			});
+		};
+	},
+
+	view : function(ctrl, model) {
+		return loginButton(ctrl);
+	}
+}
 
 //Actual component
 var home = {
@@ -387,9 +427,6 @@ var chapterSubmitForm = function(ctrl) {
 	}
 };
 
-var fbLoginBtn = function(){
-	return m(".fb-login-button[data-auto-logout-link='true'][data-max-rows='1'][data-show-faces='false'][data-size='xlarge']");
-}
 
 /*var threadNode = {
 	controller : function(options) {
