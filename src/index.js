@@ -82,13 +82,11 @@ var api = {
 			method : "GET"
 		});
 	},
-	submitTask : function(done, authorId, chapterId, novelId) {
+	submitTask : function(novelId, chapterId) {
 		return m.request({
 			url : apiUrl + "/novels/submit/" + novelId,
 			method : "POST",
 			data : {
-				state : done,
-				author : authorId,
 				chapter : chapterId
 			}
 		});
@@ -132,9 +130,9 @@ var api = {
 			}
 		});
 	},
-	updateChapter : function(authorId, content, rate) {
+	updateChapter : function(chapterId, authorId, content, rate) {
 		return m.request({
-			url : apiUrl + "/chapters/",
+			url : apiUrl + "/chapters/" + chapterId,
 			method : "PUT",
 			data : {
 				author : authorId,
@@ -148,6 +146,26 @@ var api = {
 			url : apiUrl + "/chapters/" + chapterId,
 			method : "DELETE"
 		});
+	},
+	login : function(){
+		FB.login(function(response) {
+		    if (response.authResponse) {
+		     console.log('Welcome!  Fetching your information.... ');
+		     fbId = response.authResponse.userID;
+		     isLogin = true;
+		     FB.api('/me', function(response) {
+		       fbName = response.name;
+		       console.log('Good to see you, ' + response.name + '.');
+		       m.redraw();
+		     });
+		     FB.api('/'+fbId+'/picture?width=800', function(response) {
+		       picUrl = response.data.url;
+		       m.redraw();
+		     });
+		    } else {
+		     console.log('User cancelled login or did not fully authorize.');
+		    }
+		});
 	}
 };
 
@@ -158,22 +176,35 @@ var header = function() {
 			[m("a", {
 				href: "/", config:m.route
 			}, "TheScholarSwordsman")
-		])
+		]),
+		loginButton()
 	];
 };
 
-var testButton = function(ctrl) {
-	return m("button", {
-		onclick: ctrl.getUser
-		}, 
-    	"Click me"
-	);
+var isLogin = false;
+var picUrl = "";
+var fbId = "";
+var fbName = "";
+var loginButton = function() {
+	if(isLogin && picUrl != ""){
+		return m("img[alt='User Pic'][src='" + picUrl + "']",
+			{style: {"width": "128px", "height": "128px"}
+		}
+		);
+	}
+	else {
+		return m("button", {
+			onclick: api.login
+			}, 
+	    	"Login by facebook"
+		);	
+	}
 };
 
 //HOME COMPONENT
 // Views
 // Post textarea
-var newThread = function(ctrl) {
+/*var newThread = function(ctrl) {
 	return m("form", {
 			onsubmit: ctrl.newThread
 		}, [
@@ -189,7 +220,7 @@ var newThread = function(ctrl) {
 			})
 		]
 	);
-};
+};*/
 
 var createNovelForm = function(ctrl) {
 	return m("form", {
@@ -209,7 +240,7 @@ var createNovelForm = function(ctrl) {
 	);
 };
 
-var threadListItemView = function(thread) {
+/*var threadListItemView = function(thread) {
 	return [
 		m("p", [
 			m("a", {
@@ -221,7 +252,7 @@ var threadListItemView = function(thread) {
 		m("p.comment_count", thread.comment_count + " comment(s)"),
 		m("hr") 
 	];
-};
+};*/
 
 var novelListItemView = function(novel) {
 	return [
@@ -294,7 +325,7 @@ var home = {
 
 //THREAD COMPONENT
 //Views 
-var replyView = function(ctrl) {
+/*var replyView = function(ctrl) {
 	//If the user has clicked 'reply', show the reply form
 	if(ctrl.replying) {
 		return m("form", {onsubmit : ctrl.submitComment}, [
@@ -317,7 +348,7 @@ var replyView = function(ctrl) {
 		},
 		"Reply!");
 	}
-};
+};*/
 
 var takeTaskBtn = function(ctrl) {
 	if(ctrl.novel().status == "open") {
@@ -328,13 +359,39 @@ var takeTaskBtn = function(ctrl) {
 		);
 	}
 	else {
-		return m("a",
-			"Not opened task!"
-			);
+		return m("button", {
+			onclick: ctrl.submitTask
+			}, 
+	    	"Submit task without content"
+		);
 	}
+};
+
+var chapterSubmitForm = function(ctrl) {
+	if(ctrl.inEdit == true) {
+		return m("form", {
+				onsubmit: ctrl.updateChapter
+			}, [
+				m("textarea", {
+					value : ctrl.chapter().content,
+					oninput : function(e) {
+						ctrl.newText = e.currentTarget.value;
+					}
+				}),
+				m("input", {
+					type:"submit",
+					value: "SubmitChapter!"
+				})
+			]
+		);
+	}
+};
+
+var fbLoginBtn = function(){
+	return m(".fb-login-button[data-auto-logout-link='true'][data-max-rows='1'][data-show-faces='false'][data-size='xlarge']");
 }
 
-var threadNode = {
+/*var threadNode = {
 	controller : function(options) {
 		var self = this;
 		this.replying = false;
@@ -369,9 +426,9 @@ var threadNode = {
 			])
 		]);
 	}
-};
+};*/
 //Actual component
-var thread = {
+/*var thread = {
 	controller : function(){
 		var self = this;  
 		this.thread = api.thread(m.route.param("id"));
@@ -404,14 +461,97 @@ var thread = {
 			},
 			m.component(threadNode, {node: node}))];
 	}
-};
+};*/
 
 var novel = {
 	controller : function(){
 		var self = this;  
 
 		this.takeTask = function(event) {
-			api.takeTask("testUser123", self.novel()._id)
+			api.takeTask("58b052eb8e6019201f0eb1c7", self.novel()._id)
+				.then(function(response) {
+    				self.novel(response);
+    				
+    				if (true) {
+    					api.createChapter("58b052eb8e6019201f0eb1c7", self.novel()._id, "test")
+	    					.then(function(response) {
+		    					self.chapter = api.getChapter(response._id);
+		    					self.inEdit = true;
+		    					self.newText = response.content;
+	    					}
+    					);
+    				}
+    				
+			});
+			
+			event.preventDefault();
+		};
+
+		this.submitTask = function(event) {
+			api.submitTask(self.novel()._id, self.chapter()._id)
+				.then(function(response) {
+    			self.novel(response);	
+			});
+			
+			event.preventDefault();
+		};
+
+		this.updateChapter = function(event) {
+			api.updateChapter(self.chapter()._id, "58b052eb8e6019201f0eb1c7", self.newText, "0")
+				.then(function(response) {
+						inEdit = false;
+						if (true) {
+							api.submitTask(this.novel()._id, this.chapter()._id);
+						}
+					}, 
+					function(response) {
+						self.loading = false;
+						if(response.status==404) {
+							self.notFound = true;
+						}
+						else {
+							self.error = true;
+						}
+					}
+				);
+				
+			event.preventDefault();
+		}
+
+		this.novel = api.getNovel(m.route.param("id"));
+		this.loading = true;
+		this.inEdit = false;
+
+		this.novel.then(function(response) {
+			document.title = response.title;
+			self.loading = false;
+			return response;
+		}, 
+		function(response) {
+			self.loading = false;
+			if(response.status==404) {
+				self.notFound = true;
+			}
+			else {
+				self.error = true;
+			}
+		});
+	},
+	view : function(ctrl) {
+		return [
+			header(),
+			m("h2", ctrl.novel().title),
+			takeTaskBtn(ctrl),
+			chapterSubmitForm(ctrl)
+			];
+	}
+};
+var chapter = {
+	controller : function(){
+		var self = this;  
+
+		this.createChapter = function(event) {
+			api.createChapter("58b052eb8e6019201f0eb1c7", self.novel()._id)
 				.then(function(response) {
     				self.novel(response);
 			});
@@ -423,7 +563,7 @@ var novel = {
 		this.loading = true;
 
 		this.novel.then(function(response) {
-			document.title = "TheScholarSwordsman | " + response.title;
+			document.title = response.title;
 			self.loading = false;
 			return response;
 		}, 
@@ -446,10 +586,13 @@ var novel = {
 	}
 };
 
+
 //Router
 m.route.mode = "pathname";
 m.route(document.body, "", {
-	"/thread/:id" : thread,
+	//"/thread/:id" : thread,
 	"/novel/:id" : novel,
+	"/chapter/:id" : chapter,
 	"" : home
 });
+

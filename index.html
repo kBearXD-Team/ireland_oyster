@@ -4,6 +4,24 @@
 <link rel="stylesheet" href="/colors.css"/>
 <title>ThreaditJS: Mithril</title>
 <body>
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : 1707948729469585,
+      xfbml      : true,
+      version    : 'v2.8'
+    });
+    FB.AppEvents.logPageView();
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
 <script src="/lib/shared.js"></script>
 <script src="/lib/mithril.js"></script>
 <script src="/src/index.js"></script>
