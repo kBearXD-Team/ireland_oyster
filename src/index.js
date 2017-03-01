@@ -259,6 +259,9 @@ var novelListItemView = function(novel) {
 	];
 };
 
+
+var userId = "";
+
 var loginManager = {
 	controller : function() {
 		var self  = this;
@@ -270,6 +273,7 @@ var loginManager = {
 		this.createUser = function(event) {
 			api.createUser(self.fbName, self.fbId)
 				.then(function(response) {
+					userId = response._id;
 					console.log('User created ' + response);
 				});
 		};
@@ -277,6 +281,8 @@ var loginManager = {
 		this.getUserByFbId = function(event) {
 			api.getUserByFbId(self.fbId)
 				.then(function(response) {
+					if(response.length > 0)
+						userId = response[0]._id;
 					console.log('User queried from fbid is ' + response);
 				});
 		};
@@ -330,7 +336,7 @@ var home = {
 		this.novels = api.listNovel();
 
 		this.novels.then(function(response) {
-			document.title = "ThreaditJS: Mithril | Home";
+			document.title = "TheScholarSwordsman | Home";
 			self.loading = false;
 			self.novels(response);
 		}, function(response) {
@@ -398,12 +404,15 @@ var takeTaskBtn = function(ctrl) {
 	    	"Take task!"
 		);
 	}
-	else {
+	else if(ctrl.novel().status == "processing") {
 		return m("button", {
 			onclick: ctrl.submitTask
 			}, 
 	    	"Submit task without content"
 		);
+	}
+	else if(ctrl.novel().status == "closed") {
+		return m("div","already closed motherfucker");
 	}
 };
 
@@ -505,12 +514,12 @@ var novel = {
 		var self = this;  
 
 		this.takeTask = function(event) {
-			api.takeTask("58b052eb8e6019201f0eb1c7", self.novel()._id)
+			api.takeTask(userId, self.novel()._id)
 				.then(function(response) {
     				self.novel(response);
     				
     				if (true) {
-    					api.createChapter("58b052eb8e6019201f0eb1c7", self.novel()._id, "test")
+    					api.createChapter(userId, self.novel()._id, "test")
 	    					.then(function(response) {
 		    					self.chapter = api.getChapter(response._id);
 		    					self.inEdit = true;
@@ -534,11 +543,17 @@ var novel = {
 		};
 
 		this.updateChapter = function(event) {
-			api.updateChapter(self.chapter()._id, "58b052eb8e6019201f0eb1c7", self.newText, "0")
+			api.updateChapter(self.chapter()._id, userId, self.newText, "0")
 				.then(function(response) {
-						inEdit = false;
-						if (true) {
-							api.submitTask(this.novel()._id, this.chapter()._id);
+						if (true/*success*/) {
+							self.chapter(response);
+							api.submitTask(self.novel()._id, self.chapter()._id)
+								.then(function(response) {
+									self.novel(response);
+									self.inEdit = false;
+									console.log('User created ' + response);
+									m.redraw();
+							});
 						}
 					}, 
 					function(response) {
@@ -556,6 +571,7 @@ var novel = {
 		}
 
 		this.novel = api.getNovel(m.route.param("id"));
+		this.chapter = api.getChapter();
 		this.loading = true;
 		this.inEdit = false;
 
