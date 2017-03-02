@@ -435,7 +435,62 @@ var chapterSubmitForm = function(ctrl) {
 		);
 	}
 };
+var chapterNode = function(chapterId) {
+	var self = this;
+	var loading = true;
+	var id = chapterId;
 
+		this.chapter = api.getChapter(id);
+
+		this.chapter.then(function(response) {
+			self.chapter(response);
+			return response;
+		});
+
+	if(loading){
+		m("div.comment", [
+			m("p", "busying load " + id),
+			m("hr")
+		]);
+	}
+	else {
+		return m("div.comment", [
+			m("p", m.trust(T.trimTitle(self.chapter().content))),
+			m("p", "By user " + self.chapter().author),,
+			m("p", "UID is " + self.chapter()._id),
+			m("hr") 
+		]);
+	}
+};
+var chapterNode = {
+	controller : function(options) {
+		var self = this;
+
+		this.chapter = api.getChapter(options.id);
+		this.loading = true;
+
+		this.chapter.then(function(response) {
+			document.title = response.title;
+			self.chapter(response);
+			self.loading = false;
+			return response;
+		}, 
+		function(response) {
+			self.loading = false;
+			if(response.status==404) {
+				self.notFound = true;
+			}
+			else {
+				self.error = true;
+			}
+		});
+	},
+	view : function(ctrl, options) {
+		return m("div.comment", [
+			m("p", m.trust(ctrl.chapter().content))
+		]);
+	}
+};
 
 /*var threadNode = {
 	controller : function(options) {
@@ -547,6 +602,7 @@ var novel = {
 				.then(function(response) {
 						if (true/*success*/) {
 							self.chapter(response);
+							self.chaptersId.push(response._id);
 							api.submitTask(self.novel()._id, self.chapter()._id)
 								.then(function(response) {
 									self.novel(response);
@@ -572,11 +628,15 @@ var novel = {
 
 		this.novel = api.getNovel(m.route.param("id"));
 		this.chapter = api.getChapter();
+		this.chaptersId = undefined;
 		this.loading = true;
 		this.inEdit = false;
+		this.loadingChapters = true;
 
 		this.novel.then(function(response) {
 			document.title = response.title;
+			self.chaptersId = response.chapters;
+
 			self.loading = false;
 			return response;
 		}, 
@@ -594,50 +654,20 @@ var novel = {
 		return [
 			header(),
 			m("h2", ctrl.novel().title),
+
+			m("div.children", [
+				ctrl.chaptersId.map(
+					function(child) {
+						return m.component(chapterNode, {id: child});
+					}
+				)
+			]),
 			takeTaskBtn(ctrl),
 			chapterSubmitForm(ctrl)
 			];
 	}
 };
-var chapter = {
-	controller : function(){
-		var self = this;  
 
-		this.createChapter = function(event) {
-			api.createChapter("58b052eb8e6019201f0eb1c7", self.novel()._id)
-				.then(function(response) {
-    				self.novel(response);
-			});
-			
-			event.preventDefault();
-		};
-
-		this.novel = api.getNovel(m.route.param("id"));
-		this.loading = true;
-
-		this.novel.then(function(response) {
-			document.title = response.title;
-			self.loading = false;
-			return response;
-		}, 
-		function(response) {
-			self.loading = false;
-			if(response.status==404) {
-				self.notFound = true;
-			}
-			else {
-				self.error = true;
-			}
-		});
-	},
-	view : function(ctrl) {
-		return [
-			header(),
-			m("h2", ctrl.novel().title),
-			takeTaskBtn(ctrl)
-			];
-	}
-};
 
 
 //Router
@@ -645,7 +675,6 @@ m.route.mode = "pathname";
 m.route(document.body, "", {
 	//"/thread/:id" : thread,
 	"/novel/:id" : novel,
-	"/chapter/:id" : chapter,
 	"" : home
 });
 
